@@ -1,0 +1,19 @@
+[package]
+name = "crum_pkr"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+alloy-primitives = { workspace = true }
+bls12_381 = { workspace = true }
+crum_bls = { workspace = true }
+ff = { workspace = true }
+pairing = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
+
+[dev-dependencies]
+itertools = { workspace = true }
+
+[lib]
+crate-type = ["lib", "cdylib"]

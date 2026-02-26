@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = ["lib/crum_bls", "lib/crum_pkr"]
+
+[workspace.dependencies]
+alloy-primitives = "1.5.7"
+bls12_381 = { version = "0.8.0", features = ["experimental"] }
+crum_bls = { path = "lib/crum_bls" }
+crum_pkr = { path = "lib/crum_pkr" }
+digest = "0.9.0"
+ff = "0.13.1"
+itertools = "0.14.0"
+pairing = "0.23.0"
+rand_core = "=0.6.4"
+rand = "0.8"
+
