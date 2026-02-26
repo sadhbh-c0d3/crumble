@@ -229,12 +229,15 @@ fn test_poker_table() {
     let sk_1 = Scalar::random(&mut rng);
     let sk_2 = Scalar::random(&mut rng);
 
+    let mut shuffle_trace_1 = None;
+    let mut shuffle_trace_2 = None;
+
     let mut poker_table = PokerTable::new(2, POKER_HOLDEM_ROUNDS);
 
     poker_table.join(1);
     poker_table.join(2);
 
-    poker_table.start();
+    poker_table.start_hand().unwrap();
 
     // Player 1 shuffles
     {
@@ -242,12 +245,15 @@ fn test_poker_table() {
 
         assert!(matches!(
             hand.get_current_state().to_enum(),
-            PokerHandStateEnum::Shuffle { player: 0 }
+            PokerHandStateEnum::Shuffle {
+                player: 0,
+                is_dealer: true
+            }
         ));
 
         let mut deck = hand.get_poker_deck().masked_cards();
         deck.mask(sk_1);
-        deck.shuffle(&mut rng);
+        shuffle_trace_1.replace(deck.shuffle_traced(&mut rng));
 
         println!("Player 1 shuffles deck");
 
@@ -264,12 +270,15 @@ fn test_poker_table() {
         // know which card is which.
         assert!(matches!(
             hand.get_current_state().to_enum(),
-            PokerHandStateEnum::Shuffle { player: 1 }
+            PokerHandStateEnum::Shuffle {
+                player: 1,
+                is_dealer: false
+            }
         ));
 
         let mut deck = hand.get_shuffled_deck().clone();
         deck.mask(sk_2);
-        deck.shuffle(&mut rng);
+        shuffle_trace_2.replace(deck.shuffle_traced(&mut rng));
 
         println!("Player 2 shuffles deck");
 
@@ -285,7 +294,7 @@ fn test_poker_table() {
             hand.get_current_state().to_enum(),
             PokerHandStateEnum::SmallBlind { player: 0 }
         ));
-        
+
         println!("Player 1 posts small blind");
 
         hand.submit_small_blind(0).unwrap();
@@ -299,7 +308,7 @@ fn test_poker_table() {
             hand.get_current_state().to_enum(),
             PokerHandStateEnum::BigBlind { player: 1 }
         ));
-        
+
         println!("Player 2 posts big blind");
 
         hand.submit_big_blind(1).unwrap();
@@ -316,7 +325,7 @@ fn test_poker_table() {
 
         let mut cards = hand.get_player_cards().clone();
         cards[1].unmask(sk_1);
-        
+
         println!("Player 1 unmasks hole cards of Player 2");
 
         hand.submit_player_cards(0, cards).unwrap();
@@ -333,7 +342,7 @@ fn test_poker_table() {
 
         let mut cards = hand.get_player_cards().clone();
         cards[0].unmask(sk_2);
-        
+
         println!("Player 2 unmasks hole cards of Player 1");
 
         hand.submit_player_cards(1, cards).unwrap();
@@ -419,7 +428,7 @@ fn test_poker_table() {
         // community cards are also masked by player 2
         let community_cards = hand.get_poker_deck().unmasked_cards(&cards);
         assert!(community_cards.iter().all(|c| c.is_none()));
-        
+
         println!("Player 1 unmasks community cards");
 
         hand.submit_community_cards(0, 1, cards).unwrap();
@@ -439,7 +448,7 @@ fn test_poker_table() {
 
         let mut cards = hand.get_community_cards(1).cloned().unwrap();
         cards.unmask(sk_2);
-        
+
         println!("Player 2 unmasks community cards");
 
         hand.submit_community_cards(1, 1, cards).unwrap();
@@ -472,9 +481,9 @@ fn test_poker_table() {
                 player: 0
             }
         ));
-        
+
         println!("Player 1 bets");
-        
+
         hand.submit_bet(0).unwrap();
     }
 
@@ -489,7 +498,7 @@ fn test_poker_table() {
                 player: 1
             }
         ));
-        
+
         println!("Player 2 bets");
 
         hand.submit_bet(1).unwrap();
@@ -513,7 +522,7 @@ fn test_poker_table() {
         // community cards are also masked by player 2
         let community_cards = hand.get_poker_deck().unmasked_cards(&cards);
         assert!(community_cards.iter().all(|c| c.is_none()));
-        
+
         println!("Player 1 unmasks community cards");
 
         hand.submit_community_cards(0, 2, cards).unwrap();
@@ -583,7 +592,7 @@ fn test_poker_table() {
                 player: 1
             }
         ));
-        
+
         println!("Player 2 bets");
 
         hand.submit_bet(1).unwrap();
@@ -607,7 +616,7 @@ fn test_poker_table() {
         // community cards are also masked by player 2
         let community_cards = hand.get_poker_deck().unmasked_cards(&cards);
         assert!(community_cards.iter().all(|c| c.is_none()));
-        
+
         println!("Player 1 unmasks community cards");
 
         hand.submit_community_cards(0, 3, cards).unwrap();
@@ -677,7 +686,7 @@ fn test_poker_table() {
                 player: 1
             }
         ));
-        
+
         println!("Player 2 bets");
 
         hand.submit_bet(1).unwrap();
@@ -727,10 +736,11 @@ fn test_poker_table() {
         ));
 
         let pk = make_public_key_from_signing_key(&sk_1);
-        
+
         println!("Player 1 submits their ephemeral public key");
 
-        hand.submit_public_key(0, pk).unwrap();
+        hand.submit_public_key(0, pk, shuffle_trace_1.unwrap())
+            .unwrap();
     }
 
     // Player 2 submits public key
@@ -743,10 +753,11 @@ fn test_poker_table() {
         ));
 
         let pk = make_public_key_from_signing_key(&sk_2);
-        
+
         println!("Player 2 submits their ephemeral public key");
 
-        hand.submit_public_key(1, pk).unwrap();
+        hand.submit_public_key(1, pk, shuffle_trace_2.unwrap())
+            .unwrap();
     }
 
     // Hand finished
@@ -757,7 +768,7 @@ fn test_poker_table() {
             hand.get_current_state().to_enum(),
             PokerHandStateEnum::Finished
         ));
-        
+
         println!("Finished");
     }
 }

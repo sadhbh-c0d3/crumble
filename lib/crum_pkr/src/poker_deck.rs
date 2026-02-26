@@ -1,6 +1,6 @@
 use alloy_primitives::Keccak256;
 use bls12_381::G1Affine;
-use crum_bls::{hash_to_curve::hash_to_curve, sign, types::SigningKey};
+use crum_bls::{hash_to_curve::hash_to_curve, sign, types::SigningKey, verify};
 use pairing::group::Curve;
 use rand::{Rng, seq::SliceRandom};
 
@@ -50,6 +50,10 @@ impl PokerDeck {
         self.cards_g1.clone()
     }
 
+    pub fn len(&self) -> usize {
+        self.cards_g1.len()
+    }
+
     pub fn masked_cards(&self) -> MaskedCards {
         MaskedCards::new(self.cards())
     }
@@ -73,6 +77,18 @@ impl MaskedCards {
         Self { cards_g1 }
     }
 
+    pub fn cards(&self) -> Vec<G1Affine> {
+        self.cards_g1.clone()
+    }
+
+    pub fn cards_n(&self, count: usize) -> Vec<G1Affine> {
+        self.cards_g1[0..count].iter().cloned().collect()
+    }
+
+    pub fn len(&self) -> usize {
+        self.cards_g1.len()
+    }
+
     pub fn mask(&mut self, sk: SigningKey) {
         self.cards_g1
             .iter_mut()
@@ -81,6 +97,24 @@ impl MaskedCards {
 
     pub fn shuffle(&mut self, rng: &mut impl Rng) {
         self.cards_g1.shuffle(rng);
+    }
+
+    pub fn shuffle_traced(&mut self, rng: &mut impl Rng) -> Vec<verify::ShuffleTrace> {
+        let mut cards_g1_indexed: Vec<_> = self.cards_g1.iter().cloned().enumerate().collect();
+
+        cards_g1_indexed.shuffle(rng);
+
+        let res = cards_g1_indexed
+            .iter()
+            .enumerate()
+            .map(|(after_index, (before_index, _))| verify::ShuffleTrace {
+                after_index,
+                claimed_before_index: *before_index,
+            })
+            .collect();
+
+        self.cards_g1 = cards_g1_indexed.into_iter().map(|(_, c)| c).collect();
+        res
     }
 
     pub fn hash(&self) -> [u8; 32] {
@@ -105,6 +139,14 @@ pub struct UnmaskedCards {
 impl UnmaskedCards {
     pub fn new(cards_g1: Vec<G1Affine>) -> Self {
         Self { cards_g1 }
+    }
+
+    pub fn cards(&self) -> Vec<G1Affine> {
+        self.cards_g1.clone()
+    }
+
+    pub fn len(&self) -> usize {
+        self.cards_g1.len()
     }
 
     pub fn unmask(&mut self, sk: SigningKey) {
