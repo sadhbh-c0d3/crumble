@@ -3,220 +3,17 @@
 /// Foundation: Mental Poker (1979) -> Arbitrum Stylus (2026)
 use crum_bls::{types::PublicKey, verify};
 
-use crate::poker_deck::{MaskedCards, PokerDeck, UnmaskedCards};
-
-pub struct PokerTable {
-    max_players: usize,
-    max_rounds: usize,
-    current_players: Vec<u32>,
-    dealer_button: usize,
-    current_hand: Option<PokerHand>,
-}
-
-impl PokerTable {
-    /// Player 1 creates a table
-    pub fn new(max_players: usize, max_rounds: usize) -> Self {
-        Self {
-            max_players,
-            max_rounds,
-            current_players: vec![],
-            dealer_button: 0,
-            current_hand: None,
-        }
-    }
-
-    /// Player 1, 2 (3,4,...) joins a table
-    pub fn join(&mut self, player: u32) {
-        // check player already joined
-        self.current_players.push(player);
-        // emit player joined
-    }
-
-    /// Player 1 starts new hand (at their discretion) with players at the table
-    pub fn start_hand(&mut self) -> Result<(), Vec<u8>> {
-        // check player 1 is submitter
-        // check hand in progress
-
-        if !self
-            .current_hand
-            .as_ref()
-            .is_none_or(|h| h.get_current_state().is_finished())
-        {
-            return Err(b"Hand in progress")?;
-        }
-
-        self.current_hand.replace(PokerHand::new(
-            self.current_players.len(),
-            self.max_rounds,
-            self.dealer_button,
-        ));
-
-        // emit hand started
-
-        Ok(())
-    }
-
-    /// Supports gameplay
-    pub const fn get_current_hand(&self) -> Option<&PokerHand> {
-        self.current_hand.as_ref()
-    }
-
-    /// Supports gameplay
-    pub const fn get_current_hand_mut(&mut self) -> Option<&mut PokerHand> {
-        self.current_hand.as_mut()
-    }
-
-    pub const fn get_max_players(&self) -> usize {
-        self.max_players
-    }
-
-    pub const fn get_max_rounds(&self) -> usize {
-        self.max_rounds
-    }
-
-    pub const fn get_current_player_count(&self) -> usize {
-        self.current_players.len()
-    }
-
-    pub fn get_player(&self, player: usize) -> Option<u32> {
-        self.current_players.get(player).cloned()
-    }
-}
-
-pub const POKER_HAND_STATE_SHUFFLE: u8 = 0;
-pub const POKER_HAND_STATE_SMALL_BLIND: u8 = 1;
-pub const POKER_HAND_STATE_BIG_BLIND: u8 = 2;
-pub const POKER_HAND_STATE_BET: u8 = 3;
-pub const POKER_HAND_STATE_UNMASK_HOLE_CARDS: u8 = 4;
-pub const POKER_HAND_STATE_UNMASK_COMMUNITY_CARDS: u8 = 5;
-pub const POKER_HAND_STATE_UNMASK_SHOWDOWN: u8 = 6;
-pub const POKER_HAND_STATE_SUBMIT_PUBLIC_KEY: u8 = 7;
-pub const POKER_HAND_STATE_FINISHED: u8 = 8;
-pub const POKER_HAND_STATE_CHEATED: u8 = 9;
-
-pub const POKER_HOLDEM_PREFLOP: usize = 0;
-pub const POKER_HOLDEM_FLOP: usize = 1;
-pub const POKER_HOLDEM_TURN: usize = 2;
-pub const POKER_HOLDEM_RIVER: usize = 3;
-pub const POKER_HOLDEM_ROUNDS: usize = 4;
-
-pub enum PokerHandStateEnum {
-    Shuffle { player: usize, is_dealer: bool },
-    SmallBlind { player: usize },
-    BigBlind { player: usize },
-    Bet { round: usize, player: usize },
-    UnmaskHoleCards { player: usize },
-    UnmaskCommunityCards { round: usize, player: usize },
-    UnmaskShowdown { player: usize },
-    SubmitPublicKey { player: usize },
-    Cheated { player: usize },
-    Finished,
-    Invalid,
-}
-
-pub struct PokerHandState {
-    dealer_button: usize,
-    num_players: usize,
-    max_rounds: usize,
-    current_player: usize,
-    current_round: usize,
-    current_state: u8,
-}
-
-impl PokerHandState {
-    pub const fn new(num_players: usize, max_rounds: usize, dealer_button: usize) -> Self {
-        Self {
-            num_players,
-            max_rounds,
-            dealer_button,
-            current_player: dealer_button,
-            current_round: 0,
-            current_state: POKER_HAND_STATE_SHUFFLE,
-        }
-    }
-
-    pub const fn is_dealer(&self, player: usize) -> bool {
-        self.dealer_button == player
-    }
-
-    pub const fn is_current_dealer(&self) -> bool {
-        self.is_dealer(self.current_player)
-    }
-
-    pub const fn is_finished(&self) -> bool {
-        self.current_state == POKER_HAND_STATE_FINISHED
-    }
-
-    pub const fn get_current_player(&self) -> usize {
-        self.current_player
-    }
-
-    pub fn next_dealer(&mut self) {
-        self.current_player = self.dealer_button;
-    }
-
-    pub fn next_player(&mut self) -> bool {
-        self.current_player = (self.current_player + 1) % self.num_players;
-        self.current_player == self.dealer_button
-    }
-
-    pub fn next_round(&mut self) -> Result<bool, Vec<u8>> {
-        let next_round = self.current_round + 1;
-
-        if next_round > self.max_rounds {
-            return Err(b"No next round - Hand has finished")?;
-        }
-
-        self.current_round = next_round;
-
-        if next_round == self.max_rounds {
-            return Ok(true);
-        }
-
-        Ok(false)
-    }
-
-    pub const fn to_tuple(&self) -> (usize, usize, u8) {
-        (self.current_round, self.current_player, self.current_state)
-    }
-
-    pub const fn to_enum(&self) -> PokerHandStateEnum {
-        match self.current_state {
-            POKER_HAND_STATE_SHUFFLE => PokerHandStateEnum::Shuffle {
-                player: self.current_player,
-                is_dealer: self.is_current_dealer(),
-            },
-            POKER_HAND_STATE_SMALL_BLIND => PokerHandStateEnum::SmallBlind {
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_BIG_BLIND => PokerHandStateEnum::BigBlind {
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_BET => PokerHandStateEnum::Bet {
-                round: self.current_round,
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_UNMASK_HOLE_CARDS => PokerHandStateEnum::UnmaskHoleCards {
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_UNMASK_COMMUNITY_CARDS => PokerHandStateEnum::UnmaskCommunityCards {
-                round: self.current_round,
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_UNMASK_SHOWDOWN => PokerHandStateEnum::UnmaskShowdown {
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_SUBMIT_PUBLIC_KEY => PokerHandStateEnum::SubmitPublicKey {
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_CHEATED => PokerHandStateEnum::Cheated {
-                player: self.current_player,
-            },
-            POKER_HAND_STATE_FINISHED => PokerHandStateEnum::Finished,
-            _ => PokerHandStateEnum::Invalid,
-        }
-    }
-}
+use crate::{
+    poker_bets::PokerBettingState,
+    poker_deck::{MaskedCards, PokerDeck, UnmaskedCards},
+    poker_state::{
+        POKER_HAND_STATE_BET, POKER_HAND_STATE_BIG_BLIND, POKER_HAND_STATE_CHEATED,
+        POKER_HAND_STATE_FINISHED, POKER_HAND_STATE_SMALL_BLIND,
+        POKER_HAND_STATE_SUBMIT_PUBLIC_KEY, POKER_HAND_STATE_UNMASK_COMMUNITY_CARDS,
+        POKER_HAND_STATE_UNMASK_HOLE_CARDS, POKER_HAND_STATE_UNMASK_SHOWDOWN, POKER_HOLDEM_PREFLOP,
+        PokerHandState, PokerHandStateEnum,
+    },
+};
 
 pub struct PokerHand {
     /// player_keys[public keys]
@@ -228,10 +25,18 @@ pub struct PokerHand {
     community_cards: Vec<UnmaskedCards>,
     unmasking_sequence: Vec<(usize, u8, Vec<UnmaskedCards>)>,
     current_state: PokerHandState,
+    betting_state: PokerBettingState,
+    small_blind: u64,
 }
 
 impl PokerHand {
-    pub fn new(num_players: usize, max_rounds: usize, dealer_button: usize) -> Self {
+    pub fn new(
+        num_players: usize,
+        max_rounds: usize,
+        dealer_button: usize,
+        initial_chips: u64,
+        small_blind: u64,
+    ) -> Self {
         let poker_deck = PokerDeck::new();
         let shuffled_deck = poker_deck.masked_cards();
         Self {
@@ -243,6 +48,8 @@ impl PokerHand {
             community_cards: (0..max_rounds).map(|_| UnmaskedCards::default()).collect(),
             unmasking_sequence: vec![],
             current_state: PokerHandState::new(num_players, max_rounds, dealer_button),
+            betting_state: PokerBettingState::new(num_players, initial_chips),
+            small_blind,
         }
     }
 
@@ -278,6 +85,26 @@ impl PokerHand {
             return None;
         }
         self.community_cards.get(round - 1)
+    }
+
+    /// Tell amount required to call (minimum bet)
+    pub fn get_call_amount_required(&self, player: usize) -> Result<u64, Vec<u8>> {
+        self.betting_state.call_amount_required(player)
+    }
+
+    /// Tell amount of chips remaining
+    pub fn get_chips_remaining(&self, player: usize) -> u64 {
+        self.betting_state.chips_remaining(player)
+    }
+
+    /// Tell small blind amount
+    pub fn get_small_blind(&self) -> u64 {
+        self.small_blind
+    }
+
+    /// Tell big blind amount
+    pub fn get_big_blind(&self) -> u64 {
+        self.small_blind * 2
     }
 
     /// Called by each player to submit shuffled and masked deck
@@ -322,6 +149,9 @@ impl PokerHand {
             return Err(b"Not your turn to post small blind")?;
         }
 
+        self.betting_state
+            .process_action(player, self.get_small_blind())?;
+
         self.current_state.next_player();
         self.current_state.current_state = POKER_HAND_STATE_BIG_BLIND;
 
@@ -336,6 +166,9 @@ impl PokerHand {
         if p != player {
             return Err(b"Not your turn to post big blind")?;
         }
+
+        self.betting_state
+            .process_action(player, self.get_big_blind())?;
 
         for cards in self.player_cards.iter_mut() {
             *cards = self.shuffled_deck.deal(2);
@@ -377,7 +210,12 @@ impl PokerHand {
         // emit player cards unmasked by player
 
         if self.current_state.next_player() {
+            self.current_state
+                .next_player_masked(self.betting_state.get_active_players(), true);
+            self.betting_state.next_street();
             self.current_state.current_state = POKER_HAND_STATE_BET;
+
+            self.check_betting_round_complete()?;
         }
 
         Ok(())
@@ -458,7 +296,12 @@ impl PokerHand {
         // emit community cards for round unmasked by player
 
         if self.current_state.next_player() {
+            self.current_state
+                .next_player_masked(self.betting_state.get_active_players(), true);
+            self.betting_state.next_street();
             self.current_state.current_state = POKER_HAND_STATE_BET;
+
+            self.check_betting_round_complete()?;
         }
 
         Ok(())
@@ -628,9 +471,9 @@ impl PokerHand {
         Ok(None)
     }
 
-    pub fn submit_bet(&mut self, player: usize) -> Result<(), Vec<u8>> {
+    pub fn submit_bet(&mut self, player: usize, amount: u64) -> Result<(), Vec<u8>> {
         let PokerHandStateEnum::Bet {
-            round: r,
+            round: _,
             player: p,
         } = self.get_current_state().to_enum()
         else {
@@ -641,18 +484,28 @@ impl PokerHand {
             return Err(b"Not your turn to bet")?;
         }
 
-        // TODO: implement proper Poker betting logic, progress to next round
-        // based on called bets. Here we just test cryptographic cards masking.
-        if self.current_state.next_player() {
+        self.betting_state.process_action(player, amount)?;
+        self.current_state
+            .next_player_masked(self.betting_state.get_active_players(), false);
+
+        self.check_betting_round_complete()?;
+
+        Ok(())
+    }
+
+    fn check_betting_round_complete(&mut self) -> Result<(), Vec<u8>> {
+        if self.betting_state.is_betting_round_complete() {
+            self.current_state.next_dealer();
+            let round = self.current_state.current_round;
+
             if self.current_state.next_round()? {
                 self.current_state.current_state = POKER_HAND_STATE_UNMASK_SHOWDOWN;
             } else {
-                let num_cards_deal = if r == POKER_HOLDEM_PREFLOP { 3 } else { 1 };
-                self.community_cards[r] = self.shuffled_deck.deal(num_cards_deal);
+                let num_cards_deal = if round == POKER_HOLDEM_PREFLOP { 3 } else { 1 };
+                self.community_cards[round] = self.shuffled_deck.deal(num_cards_deal);
                 self.current_state.current_state = POKER_HAND_STATE_UNMASK_COMMUNITY_CARDS;
             }
         }
-
         Ok(())
     }
 }

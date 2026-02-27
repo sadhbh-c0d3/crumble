@@ -1,4 +1,4 @@
-use crate::poker_game::{POKER_HOLDEM_ROUNDS, PokerHandStateEnum, PokerTable};
+use crate::{poker_state::{POKER_HOLDEM_ROUNDS, PokerHandStateEnum}, poker_table::PokerTable};
 
 use super::poker_deck::PokerDeck;
 use bls12_381::Scalar;
@@ -237,7 +237,7 @@ fn test_poker_table() {
     poker_table.join(1);
     poker_table.join(2);
 
-    poker_table.start_hand().unwrap();
+    poker_table.start_hand(100, 10).unwrap();
 
     // Player 1 shuffles
     {
@@ -376,7 +376,7 @@ fn test_poker_table() {
 
         println!("Player 1's Hole Cards are: {}", p1_cards_str);
 
-        hand.submit_bet(0).unwrap();
+        hand.submit_bet(0, 10).unwrap();
     }
 
     // Player 2 unmasks own cards and bets
@@ -407,7 +407,7 @@ fn test_poker_table() {
 
         println!("Player 2's Hole Cards are: {}", p2_cards_str);
 
-        hand.submit_bet(1).unwrap();
+        hand.submit_bet(1, 10).unwrap();
     }
 
     // Player 1 unmasks community cards
@@ -484,7 +484,7 @@ fn test_poker_table() {
 
         println!("Player 1 bets");
 
-        hand.submit_bet(0).unwrap();
+        hand.submit_bet(0, 10).unwrap();
     }
 
     // Player 2 bets
@@ -501,7 +501,7 @@ fn test_poker_table() {
 
         println!("Player 2 bets");
 
-        hand.submit_bet(1).unwrap();
+        hand.submit_bet(1, 10).unwrap();
     }
 
     // Player 1 unmasks community cards
@@ -578,7 +578,7 @@ fn test_poker_table() {
 
         println!("Player 1 bets");
 
-        hand.submit_bet(0).unwrap();
+        hand.submit_bet(0, 10).unwrap();
     }
 
     // Player 2 bets
@@ -595,7 +595,7 @@ fn test_poker_table() {
 
         println!("Player 2 bets");
 
-        hand.submit_bet(1).unwrap();
+        hand.submit_bet(1, 10).unwrap();
     }
 
     // Player 1 unmasks community cards
@@ -672,7 +672,7 @@ fn test_poker_table() {
 
         println!("Player 1 bets");
 
-        hand.submit_bet(0).unwrap();
+        hand.submit_bet(0, 10).unwrap();
     }
 
     // Player 2 bets
@@ -689,7 +689,7 @@ fn test_poker_table() {
 
         println!("Player 2 bets");
 
-        hand.submit_bet(1).unwrap();
+        hand.submit_bet(1, 10).unwrap();
     }
 
     // Player 1 unmasks hole cards for showdown

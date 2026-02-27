@@ -2,12 +2,18 @@ use bls12_381::Scalar;
 use crum_bls::{types::SigningKey, util::make_public_key_from_signing_key, verify};
 use crum_pkr::{
     poker_deck::PokerCard,
-    poker_game::{POKER_HOLDEM_ROUNDS, PokerHandStateEnum, PokerTable},
+    poker_state::{POKER_HOLDEM_ROUNDS, PokerHandStateEnum},
+    poker_table::PokerTable,
 };
 use ff::Field;
 use itertools::Itertools;
 // use rand::{Rng, distributions::Uniform, rngs::ThreadRng, thread_rng};
-use rand::{rngs::ThreadRng, thread_rng};
+use rand::{
+    Rng,
+    distributions::{Uniform, WeightedIndex},
+    rngs::ThreadRng,
+    thread_rng,
+};
 
 pub struct PokerCards(Vec<Option<PokerCard>>);
 
@@ -55,7 +61,8 @@ impl PokerBot {
                     hand.get_shuffled_deck().clone()
                 };
                 cards.mask(self.sk);
-                self.shuffle_trace.replace(cards.shuffle_traced(&mut self.rng));
+                self.shuffle_trace
+                    .replace(cards.shuffle_traced(&mut self.rng));
                 hand.submit_shuffled_deck(player, cards)?;
                 Ok(())
             }
@@ -68,8 +75,40 @@ impl PokerBot {
                 hand.submit_big_blind(player)
             }
             PokerHandStateEnum::Bet { round, player } => {
-                tracing::info!("Round {} Bet on Player {}", round + 1, player + 1);
-                hand.submit_bet(player)
+                let min_bet = hand.get_call_amount_required(player)?;
+                let small_blind = hand.get_small_blind();
+                let chips = hand.get_chips_remaining(player);
+                let bet = if chips < min_bet {
+                    0
+                } else {
+                    let weights = [1, 4, 8];
+                    let dist = WeightedIndex::new(&weights)
+                        .or_else(|_| Err(b"Failed to create weighted index"))?;
+                    let action = self.rng.sample(dist);
+                    match action {
+                        0 => 0,
+                        1 => min_bet,
+                        _ => {
+                            let start_unit = (min_bet + small_blind - 1) / small_blind;
+                            let end_unit = chips / small_blind;
+                            if start_unit <= end_unit {
+                                let units = self
+                                    .rng
+                                    .sample(Uniform::new_inclusive(start_unit, end_unit.min(10)));
+                                units * small_blind
+                            } else {
+                                min_bet
+                            }
+                        }
+                    }
+                };
+                tracing::info!(
+                    "Round {} Bet on Player {} (${})",
+                    round + 1,
+                    player + 1,
+                    bet
+                );
+                hand.submit_bet(player, bet)
             }
             PokerHandStateEnum::UnmaskHoleCards { player } => {
                 tracing::info!("Unmask Hole Cards on Player {}", player + 1);
@@ -122,7 +161,7 @@ impl PokerBot {
     }
 }
 
-pub fn run(num_players: usize) -> Result<(), Vec<u8>> {
+pub fn run(num_players: usize, inital_chips: u64, small_blind: u64) -> Result<(), Vec<u8>> {
     let mut bots: Vec<_> = (0..num_players)
         .map(|i| PokerBot::new(1u32 + (i as u32)))
         .collect();
@@ -130,7 +169,7 @@ pub fn run(num_players: usize) -> Result<(), Vec<u8>> {
     let mut poker_table = PokerTable::new(num_players, POKER_HOLDEM_ROUNDS);
 
     bots.iter().for_each(|b| poker_table.join(b.player_id));
-    poker_table.start_hand()?;
+    poker_table.start_hand(inital_chips, small_blind)?;
 
     loop {
         let Some(hand) = poker_table.get_current_hand() else {
@@ -181,11 +220,13 @@ pub fn run(num_players: usize) -> Result<(), Vec<u8>> {
 pub fn main() {
     tracing_subscriber::fmt::init();
 
-    // let mut rng = thread_rng();
-    // let num_players = rng.sample(Uniform::new_inclusive(2usize, 4usize));
-    let num_players = 9;
+    let mut rng = thread_rng();
+    let num_players = rng.sample(Uniform::new_inclusive(2usize, 6usize));
+    // let num_players = 6;
+    let initial_chips = 1000;
+    let small_blind = 10;
 
-    if let Err(err) = run(num_players) {
+    if let Err(err) = run(num_players, initial_chips, small_blind) {
         let err_text = String::from_utf8(err).unwrap();
         tracing::error!("Error: {}", err_text);
     }
