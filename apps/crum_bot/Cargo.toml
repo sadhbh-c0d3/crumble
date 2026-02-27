@@ -15,3 +15,9 @@ rand = { workspace = true }
 rand_core = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+[features]
+default=[]
+six_player=[]
+fancy_cards=[]
+pure_output=[]

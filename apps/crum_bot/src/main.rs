@@ -1,8 +1,8 @@
 //! Crumble (CRyptographic gaMBLE)
-//! 
+//!
 //! Mental Poker (1979) implemented using Boneh–Lynn–Shacham (BLS) cryptography.
 //! Designed by the Sonia Code & Gemini AI (2026)
-//! 
+//!
 //! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
 
 use bls12_381::Scalar;
@@ -24,11 +24,47 @@ use rand::{
 
 pub struct PokerCards(Vec<Option<PokerCard>>);
 
+#[cfg(not(feature = "fancy_cards"))]
 impl ToString for PokerCards {
     fn to_string(&self) -> String {
         self.0
             .iter()
             .map(|opt_c| opt_c.as_ref().map_or("_!".to_string(), |c| c.to_string()))
+            .join(", ")
+    }
+}
+
+#[cfg(feature = "fancy_cards")]
+#[rustfmt::skip]
+impl ToString for PokerCards {
+    fn to_string(&self) -> String {
+        self.0
+            .iter()
+            .map(|opt_c| {
+                opt_c.as_ref().map_or("_!".to_string(), |c| {
+                    let card_str = c.to_string();
+                    match card_str.as_str() {
+                        // Spades
+                        "As" => "🂡", "Ks" => "🂮", "Qs" => "🂭", "Js" => "🂫", "Ts" => "🂪", 
+                        "9s" => "🂩", "8s" => "🂨", "7s" => "🂧", "6s" => "🂦", 
+                        "5s" => "🂥", "4s" => "🂤", "3s" => "🂣", "2s" => "🂢",
+                        // Hearts
+                        "Ah" => "🂱", "Kh" => "🂾", "Qh" => "🂽", "Jh" => "🂻", "Th" => "🂺", 
+                        "9h" => "🂹", "8h" => "🂸", "7h" => "🂷", "6h" => "🂶", 
+                        "5h" => "🂵", "4h" => "🂴", "3h" => "🂳", "2h" => "🂲",
+                        // Diamonds
+                        "Ad" => "🃁", "Kd" => "🃎", "Qd" => "🃍", "Jd" => "🃋", "Td" => "🃊", 
+                        "9d" => "🃉", "8d" => "🃈", "7d" => "🃇", "6d" => "🃆", 
+                        "5d" => "🃅", "4d" => "🃄", "3d" => "🃃", "2d" => "🃂",
+                        // Clubs
+                        "Ac" => "🃑", "Kc" => "🃞", "Qc" => "🃝", "Jc" => "🃛", "Tc" => "🃚", 
+                        "9c" => "🃙", "8c" => "🃘", "7c" => "🃗", "6c" => "🃖", 
+                        "5c" => "🃕", "4c" => "🃔", "3c" => "🃓", "2c" => "🃒",
+                        // Fallback just in case
+                        _ => return card_str, 
+                    }.to_string()
+                })
+            })
             .join(", ")
     }
 }
@@ -224,12 +260,27 @@ pub fn run(num_players: usize, inital_chips: u64, small_blind: u64) -> Result<()
     Ok(())
 }
 
-pub fn main() {
-    tracing_subscriber::fmt::init();
+fn init_logging() {
+    if cfg!(feature = "pure_output") {
+        tracing_subscriber::fmt()
+            .with_target(false) // Removes "crum_bot:"
+            .with_level(false) // Removes "INFO"
+            .without_time() // Removes the timestamp
+            .init();
+    } else {
+        tracing_subscriber::fmt::init();
+    }
+}
 
-    let mut rng = thread_rng();
-    let num_players = rng.sample(Uniform::new_inclusive(2usize, 6usize));
-    // let num_players = 6;
+pub fn main() {
+    init_logging();
+
+    #[cfg(not(feature = "six_player"))]
+    let num_players = thread_rng().sample(Uniform::new_inclusive(2usize, 6usize));
+
+    #[cfg(feature = "six_player")]
+    let num_players = 6;
+
     let initial_chips = 1000;
     let small_blind = 10;
 
