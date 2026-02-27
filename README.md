@@ -22,9 +22,9 @@ For decades, this remained a notoriously difficult problem to solve at scale. Tr
 
 This implementation shatters the centralized "House" model and rebuilds it entirely on a foundation of pure math.
 
-* ♠ **Sovereign Shuffling:** Players sequentially "lock" and shuffle the deck using ephemeral keys. No single player knows the order of the cards, yet everyone can mathematically verify the deck's integrity.
-* ♥️ **Out-of-Order Peeling:** Because of the BLS pairing properties, the cryptographic layers applied by the players can be "peeled" off in any order, allowing specific community and hole cards to be revealed safely.
-* ♣️ **The Sovereign Referee Protocol:** Instead of a "House" that takes a rake, the blockchain acts as a *Stateless Referee.* It only intervenes if a player is caught cheating through a fraud proof, ensuring the game remains fast, cheap, and truly private.
+* ♦️ **Sovereign Shuffling:** Players sequentially "lock" and shuffle the deck using ephemeral keys. No single player knows the order of the cards, yet everyone can mathematically verify the deck's integrity.
+* ♣️ **Out-of-Order Peeling:** Because of the BLS pairing properties, the cryptographic layers applied by the players can be "peeled" off in any order, allowing specific community and hole cards to be revealed safely.
+* ♥️ **The Sovereign Referee Protocol:** Instead of a "House" that takes a rake, the blockchain acts as a *Stateless Referee.* It only intervenes if a player is caught cheating through a fraud proof, ensuring the game remains fast, cheap, and truly private.
 
 ## The $O(M)$ Breakthrough 🂡🂢🂣🂪🂮 🂮🂮 🂮🂮
 
