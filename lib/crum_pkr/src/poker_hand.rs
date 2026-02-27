@@ -21,16 +21,16 @@ use crate::{
 
 pub struct PokerHand {
     /// player_keys[public keys]
-    poker_deck: PokerDeck,
-    shuffled_deck: MaskedCards,
-    shuffle_history: Vec<MaskedCards>,
-    player_cards: Vec<UnmaskedCards>,
-    player_keys: Vec<Option<PublicKey>>,
-    community_cards: Vec<UnmaskedCards>,
-    unmasking_sequence: Vec<(usize, u8, Vec<UnmaskedCards>)>,
-    current_state: PokerHandState,
-    betting_state: PokerBettingState,
-    small_blind: u64,
+    pub(super) poker_deck: PokerDeck,
+    pub(super) shuffled_deck: MaskedCards,
+    pub(super) shuffle_history: Vec<MaskedCards>,
+    pub(super) player_cards: Vec<UnmaskedCards>,
+    pub(super) player_keys: Vec<Option<PublicKey>>,
+    pub(super) community_cards: Vec<UnmaskedCards>,
+    pub(super) unmasking_sequence: Vec<(usize, u8, Vec<UnmaskedCards>)>,
+    pub(super) current_state: PokerHandState,
+    pub(super) betting_state: PokerBettingState,
+    pub(super) small_blind: u64,
 }
 
 impl PokerHand {
@@ -379,103 +379,6 @@ impl PokerHand {
         };
 
         verify::verify_shuffle_traced(&prev_cards, &next_cards, &pk, &traces).is_ok()
-    }
-
-    pub fn verify_unmasking(&mut self) -> Result<Option<usize>, Vec<u8>> {
-        // Reconstruct the initial dealt state from the final shuffled deck
-        let final_shuffled_deck = self
-            .shuffle_history
-            .last()
-            .ok_or_else(|| b"No shuffle history")?
-            .cards();
-
-        let num_players = self.current_state.num_players;
-
-        let mut deck_idx = 0;
-
-        // Trackers for the "current" state of cards as they get peeled
-        // Hole cards: one Vec<G1Affine> (2 cards) per player
-        let mut tracked_hole_cards: Vec<Vec<bls12_381::G1Affine>> = Vec::new();
-        for _ in 0..num_players {
-            tracked_hole_cards.push(final_shuffled_deck[deck_idx..deck_idx + 2].to_vec());
-            deck_idx += 2;
-        }
-
-        // Community cards: stored by round (Flop=3, Turn=1, River=1)
-        let mut tracked_community_cards: Vec<Vec<bls12_381::G1Affine>> = vec![
-            final_shuffled_deck[deck_idx..deck_idx + 3].to_vec(), // Flop
-            final_shuffled_deck[deck_idx + 3..deck_idx + 4].to_vec(), // Turn
-            final_shuffled_deck[deck_idx + 4..deck_idx + 5].to_vec(), // River
-        ];
-
-        let mut comm_round_idx = 0;
-        let mut comm_unmask_count = 0;
-
-        // Replay history and verify every single peel
-        for (action_player, state_type, submitted_cards) in &self.unmasking_sequence {
-            let action_pk =
-                self.player_keys[*action_player].ok_or_else(|| b"Missing PK for unmask audit")?;
-
-            let action_pk_g2 = bls12_381::G2Affine::from(action_pk);
-
-            match *state_type {
-                POKER_HAND_STATE_UNMASK_HOLE_CARDS => {
-                    for target_player in 0..num_players {
-                        if target_player == *action_player {
-                            continue;
-                        }
-
-                        // Unmasking everyone else's hole cards
-                        let before = &tracked_hole_cards[target_player];
-                        let after = submitted_cards[target_player].cards();
-
-                        for (b, a) in before.iter().zip(after.iter()) {
-                            if !verify::verify_unmasking(*b, *a, action_pk_g2) {
-                                self.current_state.current_state = POKER_HAND_STATE_CHEATED;
-                                return Ok(Some(*action_player));
-                            }
-                        }
-                        tracked_hole_cards[target_player] = after;
-                    }
-                }
-                POKER_HAND_STATE_UNMASK_COMMUNITY_CARDS => {
-                    // Unmasking the current round of community cards
-                    let before = &tracked_community_cards[comm_round_idx];
-                    let after = submitted_cards[0].cards();
-
-                    for (b, a) in before.iter().zip(after.iter()) {
-                        if !verify::verify_unmasking(*b, *a, action_pk_g2) {
-                            self.current_state.current_state = POKER_HAND_STATE_CHEATED;
-                            return Ok(Some(*action_player));
-                        }
-                    }
-                    tracked_community_cards[comm_round_idx] = after;
-
-                    comm_unmask_count += 1;
-                    if comm_unmask_count == num_players {
-                        comm_unmask_count = 0;
-                        comm_round_idx += 1; // Advance to Turn, then River
-                    }
-                }
-                POKER_HAND_STATE_UNMASK_SHOWDOWN => {
-                    // Unmasking THEIR OWN hole cards
-                    let target_player = *action_player;
-                    let before = &tracked_hole_cards[target_player];
-                    let after = submitted_cards[target_player].cards();
-
-                    for (b, a) in before.iter().zip(after.iter()) {
-                        if !verify::verify_unmasking(*b, *a, action_pk_g2) {
-                            self.current_state.current_state = POKER_HAND_STATE_CHEATED;
-                            return Ok(Some(*action_player));
-                        }
-                    }
-                    tracked_hole_cards[target_player] = after;
-                }
-                _ => {}
-            }
-        }
-
-        Ok(None)
     }
 
     pub fn submit_bet(&mut self, player: usize, amount: u64) -> Result<(), Vec<u8>> {

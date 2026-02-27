@@ -1,8 +1,8 @@
 //! Crumble (CRyptographic gaMBLE)
-//! 
+//!
 //! Mental Poker (1979) implemented using Boneh–Lynn–Shacham (BLS) cryptography.
 //! Designed by the Sonia Code & Gemini AI (2026)
-//! 
+//!
 //! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
 
 use std::collections::HashSet;
@@ -50,6 +50,9 @@ pub fn verify_unmasking(masked: G1Affine, unmasked: G1Affine, pk: G2Affine) -> b
 
 /// Verifies that "masked_before" data has been shuffled into "masked_after"
 /// data with signing key corresponding to public key.
+/// 
+/// This is slow brute-force O(N^2) algorithm.
+/// 
 pub fn verify_shuffle(
     masked_before: &[G1Affine],
     masked_after: &[G1Affine],
@@ -102,9 +105,14 @@ pub struct ShuffleTrace {
     pub claimed_before_index: usize,
 }
 
+/// Verifies that "masked_before" data has been shuffled into "masked_after"
+/// data with signing key corresponding to public key.
+/// 
+/// This is efficient O(M) algorithm using only single Final Exponentiation call.
+/// 
 pub fn verify_shuffle_traced(
-    deck_before: &[G1Affine],
-    deck_after: &[G1Affine],
+    masked_before: &[G1Affine],
+    masked_after: &[G1Affine],
     pk: &G2Affine,
     traces: &[ShuffleTrace], // Only M traces submitted
 ) -> Result<(), &'static str> {
@@ -112,12 +120,16 @@ pub fn verify_shuffle_traced(
     let neg_g2_gen = -G2Affine::generator();
     let neg_g2_prepared = G2Prepared::from(neg_g2_gen);
 
-    // 1. THE BIJECTION CHECK (Crucial for preventing cloned cards)
+    // 1. THE BIJECTION CHECK
     let mut used_before_indices = HashSet::new();
+
+    // Create a vector to hold all pairing terms for the batched Miller Loop.
+    // Each trace adds 2 terms: one for the card after, one for the card before.
+    let mut miller_loop_terms = Vec::with_capacity(traces.len() * 2);
 
     for trace in traces {
         // Prevent out-of-bounds panics
-        if trace.after_index >= deck_after.len() || trace.claimed_before_index >= deck_before.len()
+        if trace.after_index >= masked_after.len() || trace.claimed_before_index >= masked_before.len()
         {
             return Err("Trace index out of bounds");
         }
@@ -127,22 +139,23 @@ pub fn verify_shuffle_traced(
             return Err("Duplicate input index! Cheater attempted to clone a card.");
         }
 
-        let point_after = &deck_after[trace.after_index];
-        let point_before = &deck_before[trace.claimed_before_index];
+        let point_after = &masked_after[trace.after_index];
+        let point_before = &masked_before[trace.claimed_before_index];
 
-        // 2. THE O(1) MILLER LOOP
-        // e(card_after, -G2) * e(card_before, PK) == 1
-        let is_match: bool = Bls12::multi_miller_loop(&[
-            (point_after, &neg_g2_prepared),
-            (point_before, &pk_prepared),
-        ])
+        // Push the tuples for this specific trace into the batch array
+        miller_loop_terms.push((point_after, &neg_g2_prepared));
+        miller_loop_terms.push((point_before, &pk_prepared));
+    }
+
+    // 2. THE O(M) BATCHED MILLER LOOP
+    // We run the Miller loop over all pairs at once, then do a SINGLE final exponentiation.
+    let is_valid: bool = Bls12::multi_miller_loop(&miller_loop_terms)
         .final_exponentiation()
         .is_identity()
         .into();
 
-        if !is_match {
-            return Err("Cryptographic forgery: The traced card does not mathematically match.");
-        }
+    if !is_valid {
+        return Err("Cryptographic forgery: The batched trace verification failed.");
     }
 
     Ok(())
