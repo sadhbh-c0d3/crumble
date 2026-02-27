@@ -1,8 +1,8 @@
 //! Crumble (CRyptographic gaMBLE)
-//! 
+//!
 //! Mental Poker (1979) implemented using Boneh–Lynn–Shacham (BLS) cryptography.
 //! Designed by the Sonia Code & Gemini AI (2026)
-//! 
+//!
 //! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
 
 use crum_bls::{types::PublicKey, verify};
@@ -189,7 +189,7 @@ impl PokerHand {
         &mut self,
         player: usize,
         player_cards: Vec<UnmaskedCards>,
-    ) -> Result<(), Vec<u8>> {
+    ) -> Result<bool, Vec<u8>> {
         // check current player is submitter
         let PokerHandStateEnum::UnmaskHoleCards { player: p } = self.get_current_state().to_enum()
         else {
@@ -220,9 +220,10 @@ impl PokerHand {
             self.current_state.current_state = POKER_HAND_STATE_BET;
 
             self.check_betting_round_complete()?;
+            return Ok(true)
         }
 
-        Ok(())
+        Ok(false)
     }
 
     /// Called by each player to unmask player hand
@@ -230,7 +231,7 @@ impl PokerHand {
         &mut self,
         player: usize,
         player_cards: Vec<UnmaskedCards>,
-    ) -> Result<(), Vec<u8>> {
+    ) -> Result<bool, Vec<u8>> {
         // check current player is submitter
         let PokerHandStateEnum::UnmaskShowdown { player: p } = self.get_current_state().to_enum()
         else {
@@ -256,9 +257,10 @@ impl PokerHand {
 
         if self.current_state.next_player() {
             self.current_state.current_state = POKER_HAND_STATE_SUBMIT_PUBLIC_KEY;
+            return Ok(true);
         }
 
-        Ok(())
+        Ok(false)
     }
 
     /// Called by each player to unmask community cards
@@ -267,7 +269,7 @@ impl PokerHand {
         player: usize,
         round: usize,
         cards: UnmaskedCards,
-    ) -> Result<(), Vec<u8>> {
+    ) -> Result<bool, Vec<u8>> {
         // check current player is submitter
         let PokerHandStateEnum::UnmaskCommunityCards {
             round: r,
@@ -306,9 +308,10 @@ impl PokerHand {
             self.current_state.current_state = POKER_HAND_STATE_BET;
 
             self.check_betting_round_complete()?;
+            return Ok(true);
         }
 
-        Ok(())
+        Ok(false)
     }
 
     /// Called at the end of hand to verify faierness of gameplay

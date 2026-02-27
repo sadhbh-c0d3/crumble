@@ -91,68 +91,95 @@ Unmask Hole Cards on Player 3
 Unmask Hole Cards on Player 4
 Unmask Hole Cards on Player 5
 Unmask Hole Cards on Player 6
-Round 1 Bet on Player 1 ($100)
-Round 1 Bet on Player 2 ($100)
-Round 1 Bet on Player 3 ($100)
-Round 1 Bet on Player 4 ($100)
-Round 1 Bet on Player 5 ($100)
-Round 1 Bet on Player 6 ($100)
+Player 1 cards: 🂠, 🂠
+Player 2 cards: 🂠, 🂠
+Player 3 cards: 🂠, 🂠
+Player 4 cards: 🂠, 🂠
+Player 5 cards: 🂠, 🂠
+Player 6 cards: 🂠, 🂠
+Player 1 (🂲, 🂣) Bet: $0
+Player 2 (🂽, 🂪) Bet: $30
+Player 3 (🃇, 🃊) Bet: $30
+Player 4 (🃖, 🃔) Bet: $60
+Player 5 (🃍, 🃅) Bet: $60
+Player 6 (🂺, 🃘) Bet: $70
+Player 1 (🂲, 🂣) Bet: $80
+Player 2 (🂽, 🂪) Bet: $50
+Player 3 (🃇, 🃊) Bet: $0
+Player 4 (🃖, 🃔) Bet: $60
+Player 5 (🃍, 🃅) Bet: $100
+Player 6 (🂺, 🃘) Bet: $90
+Player 1 (🂲, 🂣) Bet: $80
+Player 2 (🂽, 🂪) Bet: $0
+Player 4 (🃖, 🃔) Bet: $40
 Round 2 Unmask Community Cards on Player 1
 Round 2 Unmask Community Cards on Player 2
 Round 2 Unmask Community Cards on Player 3
 Round 2 Unmask Community Cards on Player 4
 Round 2 Unmask Community Cards on Player 5
 Round 2 Unmask Community Cards on Player 6
-Round 2 Bet on Player 1 ($80)
-Round 2 Bet on Player 2 ($100)
-Round 2 Bet on Player 3 ($100)
-Round 2 Bet on Player 4 ($100)
-Round 2 Bet on Player 5 ($0)
-Round 2 Bet on Player 6 ($0)
-Round 2 Bet on Player 1 ($20)
+Community cards: 🂻, 🃎, 🃒
+Player 1 (🂲, 🂣) Bet: $70
+Player 4 (🃖, 🃔) Bet: $0
+Player 5 (🃍, 🃅) Bet: $70
+Player 6 (🂺, 🃘) Bet: $90
+Player 1 (🂲, 🂣) Bet: $30
+Player 5 (🃍, 🃅) Bet: $30
+Player 6 (🂺, 🃘) Bet: $30
+Player 1 (🂲, 🂣) Bet: $60
+Player 5 (🃍, 🃅) Bet: $100
+Player 6 (🂺, 🃘) Bet: $80
+Player 1 (🂲, 🂣) Bet: $40
 Round 3 Unmask Community Cards on Player 1
 Round 3 Unmask Community Cards on Player 2
 Round 3 Unmask Community Cards on Player 3
 Round 3 Unmask Community Cards on Player 4
 Round 3 Unmask Community Cards on Player 5
 Round 3 Unmask Community Cards on Player 6
-Round 3 Bet on Player 1 ($30)
-Round 3 Bet on Player 2 ($40)
-Round 3 Bet on Player 3 ($100)
-Round 3 Bet on Player 4 ($100)
-Round 3 Bet on Player 1 ($90)
-Round 3 Bet on Player 2 ($80)
-Round 3 Bet on Player 3 ($20)
-Round 3 Bet on Player 4 ($20)
+Community cards: 🂻, 🃎, 🃒, 🃁
+Player 1 (🂲, 🂣) Bet: $0
+Player 5 (🃍, 🃅) Bet: $20
+Player 6 (🂺, 🃘) Bet: $30
+Player 1 (🂲, 🂣) Bet: $90
+Player 5 (🃍, 🃅) Bet: $0
+Player 6 (🂺, 🃘) Bet: $100
+Player 1 (🂲, 🂣) Bet: $100
+Player 6 (🂺, 🃘) Bet: $100
+Player 1 (🂲, 🂣) Bet: $40
 Round 4 Unmask Community Cards on Player 1
 Round 4 Unmask Community Cards on Player 2
 Round 4 Unmask Community Cards on Player 3
 Round 4 Unmask Community Cards on Player 4
 Round 4 Unmask Community Cards on Player 5
 Round 4 Unmask Community Cards on Player 6
-Round 4 Bet on Player 1 ($100)
-Round 4 Bet on Player 2 ($100)
-Round 4 Bet on Player 3 ($100)
-Round 4 Bet on Player 4 ($100)
+Community cards: 🂻, 🃎, 🃒, 🃁, 🃚
+Player 1 (🂲, 🂣) Bet: $60
+Player 6 (🂺, 🃘) Bet: $60
 Unmask Showdown on Player 1
 Unmask Showdown on Player 2
 Unmask Showdown on Player 3
 Unmask Showdown on Player 4
 Unmask Showdown on Player 5
 Unmask Showdown on Player 6
+Player 1 cards: 🂲, 🂣
+Player 2 cards: 🂽, 🂪
+Player 3 cards: 🃇, 🃊
+Player 4 cards: 🃖, 🃔
+Player 5 cards: 🃍, 🃅
+Player 6 cards: 🂺, 🃘
 Submit Public Key on Player 1
 Submit Public Key on Player 2
 Submit Public Key on Player 3
 Submit Public Key on Player 4
 Submit Public Key on Player 5
 Submit Public Key on Player 6
-Community cards: 🃇, 🂤, 🃃, 🂭, 🂢
-Player 1 cards: 🃑, 🃍
-Player 2 cards: 🃔, 🂺
-Player 3 cards: 🂵, 🂫
-Player 4 cards: 🂲, 🂴
-Player 5 cards: 🂸, 🂮
-Player 6 cards: 🂶, 🃈
+Community cards: 🂻, 🃎, 🃒, 🃁, 🃚
+Player 1 cards: 🂲, 🂣
+Player 2 cards: 🂽, 🂪
+Player 3 cards: 🃇, 🃊
+Player 4 cards: 🃖, 🃔
+Player 5 cards: 🃍, 🃅
+Player 6 cards: 🂺, 🃘
 Hand ended
 ```
 

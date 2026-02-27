@@ -5,10 +5,13 @@
 //!
 //! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
 
+use std::clone;
+
 use bls12_381::Scalar;
 use crum_bls::{types::SigningKey, util::make_public_key_from_signing_key, verify};
 use crum_pkr::{
     poker_deck::PokerCard,
+    poker_hand::PokerHand,
     poker_state::{POKER_HOLDEM_ROUNDS, PokerHandStateEnum},
     poker_table::PokerTable,
 };
@@ -41,7 +44,7 @@ impl ToString for PokerCards {
         self.0
             .iter()
             .map(|opt_c| {
-                opt_c.as_ref().map_or("_!".to_string(), |c| {
+                opt_c.as_ref().map_or("🂠".to_string(), |c| {
                     let card_str = c.to_string();
                     match card_str.as_str() {
                         // Spades
@@ -67,6 +70,37 @@ impl ToString for PokerCards {
             })
             .join(", ")
     }
+}
+
+fn show_community_cards(hand: &PokerHand) {
+    let mut community_cards = Vec::new();
+    for i in 0..POKER_HOLDEM_ROUNDS {
+        if let Some(cards) = hand.get_community_cards(i) {
+            let cards = hand.get_poker_deck().unmasked_cards(cards);
+            community_cards.extend(cards);
+        }
+    }
+    let community_cards_str = PokerCards(community_cards).to_string();
+    tracing::info!("Community cards: {}", community_cards_str);
+}
+
+fn show_player_cards(hand: &PokerHand) {
+    let cards = hand.get_player_cards();
+    let num_players = cards.len();
+    for i in 0..num_players {
+        let cards = hand.get_poker_deck().unmasked_cards(&cards[i]);
+        let player_cards_str = PokerCards(cards).to_string();
+        tracing::info!("Player {} cards: {}", i + 1, player_cards_str)
+    }
+}
+
+fn player_own_cards_str(player: usize, hand: &PokerHand, sk: SigningKey) -> String {
+    let cards = hand.get_player_cards();
+    let mut cards = cards[player].clone();
+    cards.unmask(sk);
+
+    let cards = hand.get_poker_deck().unmasked_cards(&cards);
+    PokerCards(cards).to_string()
 }
 
 pub struct PokerBot {
@@ -146,9 +180,9 @@ impl PokerBot {
                     }
                 };
                 tracing::info!(
-                    "Round {} Bet on Player {} (${})",
-                    round + 1,
+                    "Player {} ({}) Bet: ${}",
                     player + 1,
+                    player_own_cards_str(player, hand, self.sk),
                     bet
                 );
                 hand.submit_bet(player, bet)
@@ -161,7 +195,10 @@ impl PokerBot {
                         cards[i].unmask(self.sk);
                     }
                 }
-                hand.submit_player_cards(player, cards)
+                if hand.submit_player_cards(player, cards)? {
+                    show_player_cards(hand);
+                }
+                Ok(())
             }
             PokerHandStateEnum::UnmaskCommunityCards { round, player } => {
                 tracing::info!(
@@ -173,7 +210,10 @@ impl PokerBot {
                     return Err(b"No community cards for round")?;
                 };
                 cards.unmask(self.sk);
-                hand.submit_community_cards(player, round, cards)
+                if hand.submit_community_cards(player, round, cards)? {
+                    show_community_cards(hand);
+                }
+                Ok(())
             }
             PokerHandStateEnum::UnmaskShowdown { player } => {
                 tracing::info!("Unmask Showdown on Player {}", player + 1);
@@ -181,7 +221,10 @@ impl PokerBot {
                 if cards.get_mut(player).map(|c| c.unmask(self.sk)).is_none() {
                     return Err(b"Invalid player cards for showdown")?;
                 }
-                hand.submit_player_cards_showdown(player, cards)
+                if hand.submit_player_cards_showdown(player, cards)? {
+                    show_player_cards(hand);
+                }
+                Ok(())
             }
             PokerHandStateEnum::SubmitPublicKey { player } => {
                 tracing::info!("Submit Public Key on Player {}", player + 1);
@@ -221,22 +264,8 @@ pub fn run(num_players: usize, inital_chips: u64, small_blind: u64) -> Result<()
 
         let state = hand.get_current_state();
         if state.is_finished() {
-            let mut community_cards = Vec::new();
-            for i in 0..POKER_HOLDEM_ROUNDS {
-                if let Some(cards) = hand.get_community_cards(i) {
-                    let cards = hand.get_poker_deck().unmasked_cards(cards);
-                    community_cards.extend(cards);
-                }
-            }
-            let community_cards_str = PokerCards(community_cards).to_string();
-            tracing::info!("Community cards: {}", community_cards_str);
-
-            let cards = hand.get_player_cards();
-            for i in 0..num_players {
-                let cards = hand.get_poker_deck().unmasked_cards(&cards[i]);
-                let player_cards_str = PokerCards(cards).to_string();
-                tracing::info!("Player {} cards: {}", i + 1, player_cards_str)
-            }
+            show_community_cards(hand);
+            show_player_cards(hand);
             tracing::info!("Hand ended");
             break;
         }
