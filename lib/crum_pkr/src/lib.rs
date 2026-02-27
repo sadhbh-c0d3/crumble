@@ -1,3 +1,10 @@
+//! Crumble (CRyptographic gaMBLE)
+//! 
+//! Mental Poker (1979) implemented using Boneh–Lynn–Shacham (BLS) cryptography.
+//! Designed by the Sonia Code & Gemini AI (2026)
+//! 
+//! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
+
 pub mod poker_bets;
 pub mod poker_deck;
 pub mod poker_hand;

@@ -1,4 +1,10 @@
-/// (De)Serialization of keys and signatures
+//! Crumble (CRyptographic gaMBLE)
+//! 
+//! Mental Poker (1979) implemented using Boneh–Lynn–Shacham (BLS) cryptography.
+//! Designed by the Sonia Code & Gemini AI (2026)
+//! 
+//! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
+
 use bls12_381::G2Projective;
 use pairing::group::Curve;
 

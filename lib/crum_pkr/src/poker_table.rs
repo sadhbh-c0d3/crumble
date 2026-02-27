@@ -1,6 +1,9 @@
-/// Sovereign Referee Protocol (SRP) - Core Cryptographic Kernel
-/// Designed by the Sonia-Code & Gemini (2026)
-/// Foundation: Mental Poker (1979) -> Arbitrum Stylus (2026)
+//! Crumble (CRyptographic gaMBLE)
+//! 
+//! Mental Poker (1979) implemented using Boneh–Lynn–Shacham (BLS) cryptography.
+//! Designed by the Sonia Code & Gemini AI (2026)
+//! 
+//! Copyright (c) 2026 Sonia Code; See LICENSE file for license details.
 
 use crate::poker_hand::PokerHand;
 

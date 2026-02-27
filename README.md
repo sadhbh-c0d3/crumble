@@ -2,6 +2,16 @@
 
 **Mental Poker** implemented using **Boneh–Lynn–Shacham (BLS)** cryptography.
 
+**Author:** [Sonia Code](https://github.com/sadhbh-c0d3)
+
+Copyright (c) 2026 Sonia Code; See [LICENSE](LICENSE) file for license details.
+
+
+```bash
+cargo run -p crum_bot
+```
+
+
 ## About the Origins: The Unsolved Problem of Mental Poker
 
 In 1979, Adi Shamir, Ronald Rivest, and Leonard Adleman (the "RSA" trio) published **"Mental Poker,"** a paper posing a radical question: *Is it possible to play a fair game of poker over a communications channel without a trusted third party?*
